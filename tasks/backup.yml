@@ -34,23 +34,6 @@
     priv: "mysql.backup_history:SELECT,INSERT,UPDATE,CREATE,DROP"
     state: present
 
-# Add this step before as password was changed during install
-- name: add .my.cnf file to backup user's home
-  template:
-    src: dot_my.cnf.j2
-    dest: "/home/{{ redmine_backup_user }}/.my.cnf"
-    owner: "{{ redmine_backup_user }}"
-    group: "{{ redmine_backup_user }}"
-    mode: 0650
-
-- name: add .my.cnf file to redmine user's home
-  template:
-    src: dot_my.cnf.j2
-    dest: "/home/redmine/.my.cnf"
-    owner: "redmine"
-    group: "redmine"
-    mode: 0650
-
 - name: create redmine_backup_user on local server
   user:
     name: "{{ redmine_backup_user }}"
@@ -72,6 +55,25 @@
     state: present
   when: ansible_hostname != redmine_backup_server
   delegate_to: "{{ redmine_backup_server }}"
+
+# Add this step before as password was changed during install
+- name: add .my.cnf file to backup user's home
+  template:
+    src: dot_my.cnf.j2
+    dest: "/home/{{ redmine_backup_user }}/.my.cnf"
+    owner: "{{ redmine_backup_user }}"
+    group: "{{ redmine_backup_user }}"
+    mode: 0650
+
+- name: add .my.cnf file to redmine user's home
+  template:
+    src: dot_my.cnf.j2
+    dest: "/home/redmine/.my.cnf"
+    owner: "redmine"
+    group: "redmine"
+    mode: 0650
+
+
 
 - name: allow redmine user to restart service apache2 after restore
   lineinfile:
