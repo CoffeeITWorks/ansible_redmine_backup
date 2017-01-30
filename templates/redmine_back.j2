@@ -17,6 +17,9 @@ is done, but the commit message is the parameter list instead of the date.
 Beforehand, check out the desired version of the Redmine database from git-repo.
 This command will restore that version into Redmine.
 
+-d --dropdb
+Before restore, drop the db, must be used with --restore --dropdb
+
 -h --help
 Print this help text.
 EOF
@@ -25,10 +28,11 @@ exit $1
 
 DATABASE=`cat {{ redmine_config_db }} | sed -rn 's/ *database: (.+)/\1/p' | head -n 1`
 
-FILES={{ redmine_files }}
+FILES='{{ redmine_files }}'
 BACKUPSERVER={{ redmine_backup_server }}
 BACKUPUSER={{ redmine_backup_user }}
 BACKUPDIR=/home/$BACKUPUSER/backups/$HOSTNAME/redmine
+REDMINEDIR='{{ redmine_dir }}'
 
 if [[ ! -d $BACKUPDIR ]]; then
     mkdir -p $BACKUPDIR
@@ -48,6 +52,12 @@ if [ "$1" = "-h" -o "$1" = "--help" ]; then
 # Restore
 elif [ "$1" = "-r" -o "$1" = "--restore" ]; then
   # restore mysql db
+
+  if [ "$2" = "-d" -o "$2" = "--dropdb" ]; then
+      echo "WARNING: you have choosen to drop and create the database"
+      mysql -e "drop database ${DATABASE}; create database ${DATABASE}"
+  fi
+
   # credential should be stored in .my.cnf
   /usr/bin/mysql $DATABASE < redmine.sql
   if [ $? == 0 ]; then
@@ -58,19 +68,30 @@ elif [ "$1" = "-r" -o "$1" = "--restore" ]; then
   fi
 
   # restore files
-  tar -xzf files.tar.gz -C $FILES/
+  rsync -ru files/ ${FILES}
 
   if [ $? == 0 ]; then
+
+    sudo /bin/chown www-data:wwww-data -R {{ redmine_files }}
+    sudo /bin/chmod 775 -R {{ redmine_files }}
     echo "restore files successfull"
+
   else
     echo "restore files to ${FILES} failed"
     exit 1
   fi
 
   # move to redmine dir
-  cd {{ redmine_dir }}
-  "bash -c 'source /home/$USER/.rvm/scripts/rvm && rake db:migrate RAILS_ENV=production'"
-  "bash -c 'source /home/$USER/.rvm/scripts/rvm && rake redmine:plugins:migrate RAILS_ENV=production'"
+  cd ${REDMINEDIR}
+  bash -c 'source /home/$USER/.rvm/scripts/rvm && rake db:migrate RAILS_ENV=production'
+  if [ $? == 0 ]; then
+    echo "db:migrate successfull"
+  else
+    echo "db:migrate failed - ensure you have done drop database redmine; create database redmine"
+    exit 1
+  fi
+
+  bash -c 'source /home/$USER/.rvm/scripts/rvm && rake redmine:plugins:migrate RAILS_ENV=production'
   sudo service apache2 reload
 
 # Backup
@@ -87,7 +108,7 @@ else
   fi
 
   # backup files
-  tar -czf files.tar.gz ${FILES}
+  rsync -ru ${FILES}/ files/
   if [ $? == 0 ]; then
     echo "backup files successfull"
   else

@@ -73,13 +73,18 @@
   when: ansible_hostname != redmine_backup_server
   delegate_to: "{{ redmine_backup_server }}"
 
-
 - name: allow redmine user to restart service apache2 after restore
   lineinfile:
     dest="/etc/sudoers" regexp='{{ item.src }}' line="{{ item.value }}"
   with_items:
-      - { src: "^redmine ALL=NOPASSWD:/usr/sbin/service apache2", value: "^redmine ALL=NOPASSWD:/usr/sbin/service apache2 *" }
+      - src: "^redmine ALL=NOPASSWD:/usr/sbin/service apache2"
+        value: "redmine ALL=NOPASSWD:/usr/sbin/service apache2 *"
 
+      - src: '^redmine ALL=NOPASSWD:/bin/chown www-data\\:wwww-data -R {{ redmine_files }}'
+        value: 'redmine ALL=NOPASSWD:/bin/chown www-data\:wwww-data -R {{ redmine_files }}'
+
+      - src: '^redmine ALL=NOPASSWD:/bin/chmod 775 -R {{ redmine_files }}'
+        value: 'redmine ALL=NOPASSWD:/bin/chmod 775 -R {{ redmine_files }}'
 
 - name: read ssh_host_key
   command: "ssh-keyscan -t rsa {{ redmine_backup_server }}"
