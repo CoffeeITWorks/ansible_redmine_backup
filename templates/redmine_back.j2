@@ -88,6 +88,10 @@ elif [ "$1" = "-r" -o "$1" = "--restore" ]; then
     echo "db:migrate successfull"
   else
     echo "db:migrate failed - ensure you have done drop database redmine; create database redmine"
+    echo -e "\n if this is the first time you are doing the backup and you get some error about bundler not found"
+    echo -e "run this: \nbash -c 'source /home/$USER/.rvm/scripts/rvm && gem install rake'"
+    echo "bash -c 'source /home/$USER/.rvm/scripts/rvm && gem install bundler'"
+    echo "bash -c 'source /home/$USER/.rvm/scripts/rvm && bundle install'"
     exit 1
   fi
 
