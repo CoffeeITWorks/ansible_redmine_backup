@@ -1,8 +1,10 @@
 ---
 
 # Redmine Backup server
-redmine_backup_user: "redmine_backup"
-redmine_backup_password: "backup!password"
+redmine_backup_user: "redminebackup"
+# generate passowrd with mkpasswd -s -m sha-512
+redmine_backup_password: "$6$3b27rVObPHrCePA9$ou0NpNHSFX9gDWm6Csi3sZzdWS12RSgw.E3oi8sqefrIziRkhrLBAd.T/YFy7iNmX5lX73.SUgwqBmd/NWQyF0"
+redmine_backup_mysqlpass: backup$password
 redmine_backup_server: "{{ ansible_hostname }}"
 
 redmine_custom_shared_dir: "/usr/local/share/redmine_custom"

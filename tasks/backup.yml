@@ -1,5 +1,48 @@
 ### CRON CONFIGURATION ###
 
+# https://dev.mysql.com/doc/mysql-enterprise-backup/4.0/en/mysqlbackup.privileges.html
+- name: grant redmine user privs as backup administrator
+  mysql_user:
+    name: "{{ redmine_backup_user }}"
+    host: localhost
+    append_privs: yes
+    priv: "*.*:RELOAD,SUPER,PROCESS,REPLICATION CLIENT"
+    state: present
+    password: "{{ redmine_backup_mysqlpass }}"
+
+- name: grant redmine user privs over redminedb
+  mysql_user:
+    name: "{{ redmine_backup_user }}"
+    host: localhost
+    append_privs: yes
+    priv: "redmine.*:ALL"
+    state: present
+
+- name: grant redmine user privs to backup_progress
+  mysql_user:
+    name: "{{ redmine_backup_user }}"
+    host: localhost
+    append_privs: yes
+    priv: "mysql.backup_progress:SELECT,INSERT,UPDATE,CREATE,DROP"
+    state: present
+
+- name: grant redmine user privs to backup_history
+  mysql_user:
+    name: "{{ redmine_backup_user }}"
+    host: localhost
+    append_privs: yes
+    priv: "mysql.backup_history:SELECT,INSERT,UPDATE,CREATE,DROP"
+    state: present
+
+# Add this step before as password was changed during install
+- name: add .my.cnf file to backup user's home
+  template:
+    src: dot_my.cnf.j2
+    dest: "/home/{{ redmine_backup_user }}/.my.cnf"
+    owner: "{{ redmine_backup_user }}"
+    group: "{{ redmine_backup_user }}"
+    mode: 0650
+
 - name: create redmine_backup_user on local server
   user:
     name: "{{ redmine_backup_user }}"
@@ -35,14 +78,15 @@
   become_user: "{{ redmine_backup_user }}"
 
 - name: read the ssh key to authorize
-  set_fact:
-    backup_user_key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+  command: "cat $HOME/.ssh/id_rsa.pub"
+  register: backup_user_key
+  changed_when: false
   become_user: "{{ redmine_backup_user }}"
 
 - name: authorize ssh_key on remote server
   authorized_key:
     user: "{{ redmine_backup_user }}"
-    key: "{{ backup_user_key }}"
+    key: "{{ backup_user_key.stdout }}"
   delegate_to: "{{ redmine_backup_server }}"
 
 - name: install custom scripts
@@ -56,7 +100,10 @@
     - { src: 'redmine_back.j2', dest: '{{ redmine_custom_shared_dir }}/redmine_back' }
 
 - name: link scripts to bin path
-  shell: 'ln -sf {{ item.src }} {{ item.dest }}'
+  file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    state: link
   with_items:
     - { src: '{{ redmine_custom_shared_dir }}/redmine_back', dest: '{{ usr_local_bin }}/redmine_back' }
 

@@ -24,8 +24,7 @@ exit $1
 }
 
 DATABASE=`cat {{ redmine_config_db }} | sed -rn 's/ *database: (.+)/\1/p' | head -n 1`
-USERNAME=`cat {{ redmine_config_db }} | sed -rn 's/ *username: (.+)/\1/p' | head -n 1`
-PASSWORD=`cat {{ redmine_config_db }} | sed -rn 's/ *password: (.+)/\1/p' | head -n 1`
+
 FILES={{ redmine_files }}
 BACKUPSERVER={{ redmine_backup_server }}
 BACKUPUSER={{ redmine_backup_user }}
@@ -49,7 +48,8 @@ if [ "$1" = "-h" -o "$1" = "--help" ]; then
 # Restore
 elif [ "$1" = "-r" -o "$1" = "--restore" ]; then
   # restore mysql db
-  /usr/bin/mysql --user=${USERNAME} --password=${PASSWORD} $DATABASE < redmine.sql
+  # credential should be stored in .my.cnf
+  /usr/bin/mysql $DATABASE < redmine.sql
   # restore files
   rsync -rul files/ $FILES/
 
@@ -64,12 +64,28 @@ else
   if [ "$1" ]; then MSG="$@"; else MSG="`date`"; fi
 
   # backup db
-  /usr/bin/mysqldump --user=${USERNAME} --password=${PASSWORD} --skip-extended-insert $DATABASE > redmine.sql
+  /usr/bin/mysqldump --skip-extended-insert ${DATABASE} > redmine.sql
+  if [ $? == 0 ]; then
+    echo "backup db successfull"
+  else
+    echo "backup db failed for db: ${DATABASE}, user and password used in my.cnf"
+    exit 1
+  fi
+
   # backup files
   rsync -a ${FILES} .
+  if [ $? == 0 ]; then
+    echo "backup files successfull"
+  else
+    echo "backup files failed from ${FILES} to $(pwd)"
+    exit 1
+  fi
 
   if [ "${BACKUPSERVER,,}" != "${HOSTNAME,,}" ]; then
+
+      ssh redminebackup@10.100.66.86 "if [[ ! -d /home/redminebackup/backups/$HOSTNAME/redmine ]]; then  mkdir -p $BACKUPDIR; fi"
       rsync -rul $BACKUPDIR/ $BACKUPUSER@$BACKUPSERVER:$BACKUPDIR/
+      
   fi
 
 fi
