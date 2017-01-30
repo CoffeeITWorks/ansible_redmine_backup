@@ -50,8 +50,22 @@ elif [ "$1" = "-r" -o "$1" = "--restore" ]; then
   # restore mysql db
   # credential should be stored in .my.cnf
   /usr/bin/mysql $DATABASE < redmine.sql
+  if [ $? == 0 ]; then
+    echo "restore db successfull"
+  else
+    echo "restore db failed for db: ${DATABASE}, user and password used in my.cnf"
+    exit 1
+  fi
+
   # restore files
-  rsync -rul files/ $FILES/
+  tar -xzf files.tar.gz -C $FILES/
+
+  if [ $? == 0 ]; then
+    echo "restore files successfull"
+  else
+    echo "restore files to ${FILES} failed"
+    exit 1
+  fi
 
   # move to redmine dir
   cd {{ redmine_dir }}
@@ -73,7 +87,7 @@ else
   fi
 
   # backup files
-  rsync -a ${FILES} .
+  tar -czf files.tar.gz ${FILES}
   if [ $? == 0 ]; then
     echo "backup files successfull"
   else
@@ -85,7 +99,7 @@ else
 
       ssh redminebackup@10.100.66.86 "if [[ ! -d /home/redminebackup/backups/$HOSTNAME/redmine ]]; then  mkdir -p $BACKUPDIR; fi"
       rsync -rul $BACKUPDIR/ $BACKUPUSER@$BACKUPSERVER:$BACKUPDIR/
-      
+
   fi
 
 fi

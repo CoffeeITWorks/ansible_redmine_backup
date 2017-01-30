@@ -43,6 +43,14 @@
     group: "{{ redmine_backup_user }}"
     mode: 0650
 
+- name: add .my.cnf file to redmine user's home
+  template:
+    src: dot_my.cnf.j2
+    dest: "/home/redmine/.my.cnf"
+    owner: "redmine"
+    group: "redmine"
+    mode: 0650
+
 - name: create redmine_backup_user on local server
   user:
     name: "{{ redmine_backup_user }}"
@@ -64,6 +72,14 @@
     state: present
   when: ansible_hostname != redmine_backup_server
   delegate_to: "{{ redmine_backup_server }}"
+
+
+- name: allow redmine user to restart service apache2 after restore
+  lineinfile:
+    dest="/etc/sudoers" regexp='{{ item.src }}' line="{{ item.value }}"
+  with_items:
+      - { src: "^redmine ALL=NOPASSWD:/usr/sbin/service apache2", value: "^redmine ALL=NOPASSWD:/usr/sbin/service apache2 *" }
+
 
 - name: read ssh_host_key
   command: "ssh-keyscan -t rsa {{ redmine_backup_server }}"
