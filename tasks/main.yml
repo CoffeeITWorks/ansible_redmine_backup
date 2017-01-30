@@ -1,0 +1,13 @@
+---
+
+####  --- customizations ------
+
+- name: ensure shared directory
+  file: path="{{ redmine_custom_shared_dir }}" owner=root group=root mode=0755 state=directory
+  tags:
+    - always
+
+- include: backup.yml
+  tags:
+    - configure_backup
+    - run_backup

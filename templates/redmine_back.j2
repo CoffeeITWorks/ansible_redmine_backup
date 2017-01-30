@@ -1,0 +1,75 @@
+#!/bin/bash
+# Example script extracted from http://www.redmine.org/projects/redmine/wiki/HowTo_Migrate_Redmine_to_a_new_server_to_a_new_Redmine_version
+usage() {
+cat <<EOF
+Usage: redmine_bak [ -r | -h ] [commit msg]
+
+When called without parameters, the Redmine database and files are copied with
+rsync to backup server.
+
+You must have created $BACKUPDIR on destination server
+Also ssh-copy-id your clients ssh key
+
+When the first parameter is none of the ones below, the same backup procedure
+is done, but the commit message is the parameter list instead of the date.
+
+-r --restore
+Beforehand, check out the desired version of the Redmine database from git-repo.
+This command will restore that version into Redmine.
+
+-h --help
+Print this help text.
+EOF
+exit $1
+}
+
+DATABASE=`cat {{ redmine_config_db }} | sed -rn 's/ *database: (.+)/\1/p' | head -n 1`
+USERNAME=`cat {{ redmine_config_db }} | sed -rn 's/ *username: (.+)/\1/p' | head -n 1`
+PASSWORD=`cat {{ redmine_config_db }} | sed -rn 's/ *password: (.+)/\1/p' | head -n 1`
+FILES={{ redmine_files }}
+BACKUPSERVER={{ redmine_backup_server }}
+BACKUPUSER={{ redmine_backup_user }}
+BACKUPDIR=/home/$BACKUPUSER/backups/$HOSTNAME/redmine
+
+if [[ ! -d $BACKUPDIR ]]; then
+    mkdir -p $BACKUPDIR
+fi
+
+# move to backup dir
+cd $BACKUPDIR
+
+if ! grep -q $BACKUPSERVER $HOME/.ssh/known_hosts; then
+    ssh-keyscan -t rsa $BACKUPSERVER >> $HOME/.ssh/known_hosts
+fi
+
+# Help
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+  usage 0
+
+# Restore
+elif [ "$1" = "-r" -o "$1" = "--restore" ]; then
+  # restore mysql db
+  /usr/bin/mysql --user=${USERNAME} --password=${PASSWORD} $DATABASE < redmine.sql
+  # restore files
+  rsync -rul files/ $FILES/
+
+  # move to redmine dir
+  cd {{ redmine_dir }}
+  "bash -c 'source /home/$USER/.rvm/scripts/rvm && rake db:migrate RAILS_ENV=production'"
+  "bash -c 'source /home/$USER/.rvm/scripts/rvm && rake redmine:plugins:migrate RAILS_ENV=production'"
+  sudo service apache2 reload
+
+# Backup
+else
+  if [ "$1" ]; then MSG="$@"; else MSG="`date`"; fi
+
+  # backup db
+  /usr/bin/mysqldump --user=${USERNAME} --password=${PASSWORD} --skip-extended-insert $DATABASE > redmine.sql
+  # backup files
+  rsync -a ${FILES} .
+
+  if [ "${BACKUPSERVER,,}" != "${HOSTNAME,,}" ]; then
+      rsync -rul $BACKUPDIR/ $BACKUPUSER@$BACKUPSERVER:$BACKUPDIR/
+  fi
+
+fi

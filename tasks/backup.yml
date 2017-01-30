@@ -1,0 +1,69 @@
+### CRON CONFIGURATION ###
+
+- name: create redmine_backup_user on local server
+  user:
+    name: "{{ redmine_backup_user }}"
+    comment: "redmine_backup_userr"
+    groups: redmine,www-data
+    shell: /bin/bash
+    password: "{{ redmine_backup_password }}"
+    generate_ssh_key: yes
+    state: present
+
+- name: create redmine_backup_user on remote backup_server
+  user:
+    name: "{{ redmine_backup_user }}"
+    comment: "redmine_backup_userr"
+    groups: www-data
+    shell: /bin/bash
+    password: "{{ redmine_backup_password }}"
+    generate_ssh_key: yes
+    state: present
+  when: ansible_hostname != redmine_backup_server
+  delegate_to: "{{ redmine_backup_server }}"
+
+- name: read ssh_host_key
+  command: "ssh-keyscan -t rsa {{ redmine_backup_server }}"
+  register: ssh_backup_host_key
+  changed_when: false
+
+- name: Add backup server to known_hosts
+  known_hosts:
+    name: "{{ redmine_backup_server }}"
+    key: "{{ ssh_backup_host_key.stdout }}"
+    state: present
+  become_user: "{{ redmine_backup_user }}"
+
+- name: read the ssh key to authorize
+  set_fact:
+    backup_user_key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+  become_user: "{{ redmine_backup_user }}"
+
+- name: authorize ssh_key on remote server
+  authorized_key:
+    user: "{{ redmine_backup_user }}"
+    key: "{{ backup_user_key }}"
+  delegate_to: "{{ redmine_backup_server }}"
+
+- name: install custom scripts
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    owner: 'root'
+    group: 'root'
+    mode: 0755
+  with_items:
+    - { src: 'redmine_back.j2', dest: '{{ redmine_custom_shared_dir }}/redmine_back' }
+
+- name: link scripts to bin path
+  shell: 'ln -sf {{ item.src }} {{ item.dest }}'
+  with_items:
+    - { src: '{{ redmine_custom_shared_dir }}/redmine_back', dest: '{{ usr_local_bin }}/redmine_back' }
+
+- cron: name='redmine backup 7am'
+        job='{{ usr_local_bin }}/redmine_back'
+        user='{{ redmine_backup_user }}'
+        cron_file='redmine_backup'
+        weekday='*'
+        hour='7'
+        minute='0'

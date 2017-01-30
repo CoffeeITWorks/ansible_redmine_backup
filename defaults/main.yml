@@ -1,0 +1,13 @@
+---
+
+# Redmine Backup server
+redmine_backup_user: "redmine_backup"
+redmine_backup_password: "backup!password"
+redmine_backup_server: "{{ ansible_hostname }}"
+
+redmine_custom_shared_dir: "/usr/local/share/redmine_custom"
+usr_local_bin: "/usr/local/bin"
+
+redmine_dir: "/opt/redmine/current"
+redmine_config_db: "{{ redmine_dir }}/config/database.yml"
+redmine_files: "{{ redmine_dir }}/files"

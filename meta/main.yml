@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  author: Pablo Estigarribia
+  description: ansible role configure basic redmine backup
+  company: CoffeeITWorks
+  license: MIT
+  min_ansible_version: 2.0
+  platforms:
+  - name: Ubuntu
+    versions:
+    - trusty
+  categories:
+  - development
+  - web
+dependencies: []
