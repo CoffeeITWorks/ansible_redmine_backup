@@ -72,7 +72,7 @@ elif [ "$1" = "-r" -o "$1" = "--restore" ]; then
 
   if [ $? == 0 ]; then
 
-    sudo /bin/chown www-data:wwww-data -R {{ redmine_files }}
+    sudo /bin/chown www-data:www-data -R {{ redmine_files }}
     sudo /bin/chmod 775 -R {{ redmine_files }}
     echo "restore files successfull"
 

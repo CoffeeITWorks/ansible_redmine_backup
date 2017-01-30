@@ -82,8 +82,8 @@
       - src: "^redmine ALL=NOPASSWD:/usr/sbin/service apache2"
         value: "redmine ALL=NOPASSWD:/usr/sbin/service apache2 *"
 
-      - src: '^redmine ALL=NOPASSWD:/bin/chown www-data\\:wwww-data -R {{ redmine_files }}'
-        value: 'redmine ALL=NOPASSWD:/bin/chown www-data\:wwww-data -R {{ redmine_files }}'
+      - src: '^redmine ALL=NOPASSWD:/bin/chown www-data\\:www-data -R {{ redmine_files }}'
+        value: 'redmine ALL=NOPASSWD:/bin/chown www-data\:www-data -R {{ redmine_files }}'
 
       - src: '^redmine ALL=NOPASSWD:/bin/chmod 775 -R {{ redmine_files }}'
         value: 'redmine ALL=NOPASSWD:/bin/chmod 775 -R {{ redmine_files }}'
