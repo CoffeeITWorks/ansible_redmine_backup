@@ -20,6 +20,28 @@ default: `backup$password`
 
 There are more optional vars at `defaults/main.yml` file.
 
+Manually restoring
+------------------
+
+Use:
+
+    sudo su redmine
+    redmine_back --restore --dropdb
+
+To copy the contents from other server, on backup server:
+
+    rsync /home/redminebackup/backups user@redmineserver:
+
+Then move the files, on redmine server:
+
+    mv /home/redminebackup/backups/ /home/redminebackup/oldbackups/
+    mv /home/user/backups/ /home/redminebackup/backups/
+
+Then move the files from the other server and put them as yours
+
+    cd /home/redminebackup/backups
+    mv remoteserver myserver
+
 License
 -------
 
