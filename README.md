@@ -28,6 +28,9 @@ Use:
     sudo su redmine
     redmine_back --restore --dropdb
 
+Copying the files from remote server (ex: production to testing)
+----------------------------------------------------------------
+
 To copy the contents from other server, on backup server:
 
     rsync /home/redminebackup/backups user@redmineserver:
