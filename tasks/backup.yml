@@ -38,11 +38,12 @@
   user:
     name: "{{ redmine_backup_user }}"
     comment: "redmine_backup_userr"
-    groups: redmine,www-data
+    groups: "{{ redmine_system_user}},www-data"
     shell: /bin/bash
     password: "{{ redmine_backup_password }}"
     generate_ssh_key: yes
     state: present
+    append: yes
 
 - name: create redmine_backup_user on remote backup_server
   user:
@@ -53,6 +54,7 @@
     password: "{{ redmine_backup_password }}"
     generate_ssh_key: yes
     state: present
+    append: yes
   when: ansible_hostname != redmine_backup_server
   delegate_to: "{{ redmine_backup_server }}"
 
@@ -68,12 +70,10 @@
 - name: add .my.cnf file to redmine user's home
   template:
     src: dot_my.cnf.j2
-    dest: "/home/redmine/.my.cnf"
+    dest: "/home/{{ redmine_system_user }}/.my.cnf"
     owner: "redmine"
     group: "redmine"
     mode: 0650
-
-
 
 - name: allow redmine user to restart service apache2 after restore
   lineinfile:
@@ -99,12 +99,14 @@
     key: "{{ ssh_backup_host_key.stdout }}"
     state: present
   become_user: "{{ redmine_backup_user }}"
+  become: yes
 
 - name: read the ssh key to authorize
-  command: "cat $HOME/.ssh/id_rsa.pub"
+  shell: "cat $HOME/.ssh/id_rsa.pub"
   register: backup_user_key
   changed_when: false
   become_user: "{{ redmine_backup_user }}"
+  become: yes
 
 - name: authorize ssh_key on remote server
   authorized_key:

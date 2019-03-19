@@ -1,9 +1,12 @@
 ---
 
+redmine_system_user: redmine
+#rvm_path: /home/{{ redmine_system_user }}/.rvm/scripts/rvm
+rvm_path: /usr/local/rvm/scripts/rvm
 # Redmine Backup server
 redmine_backup_user: "redminebackup"
 # generate passowrd with mkpasswd -s -m sha-512
-redmine_backup_password: "$6$3b27rVObPHrCePA9$ou0NpNHSFX9gDWm6Csi3sZzdWS12RSgw.E3oi8sqefrIziRkhrLBAd.T/YFy7iNmX5lX73.SUgwqBmd/NWQyF0"
+redmine_backup_password: "$6$59bXFgvt85d$s3Yl1UU3irjeXCy4D9mU14m5tNF8yufMuK3qtoNrut4IObXFb0obTlVxmfyVsQOw5NToE0dD320sndiFWR7aI/"
 redmine_backup_mysqlpass: backup$password
 redmine_backup_server: "{{ ansible_hostname }}"
 
