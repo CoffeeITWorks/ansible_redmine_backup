@@ -53,3 +53,50 @@ MIT
 Author Information
 ------------------
 Pablo Estigarribia
+
+
+Example restoring from test server to prod server
+-------------------------------------------------
+
+**Test server name:** TESTSERVER
+**Prod server name:** PRODSERVER
+**Backup server name:** BACKUPSERVER
+
+Restore production on test server:
+
+Login to test server TESTSERVER
+
+:$ sudo su redminebackup
+
+:$ cd /home/redminebackup
+
+:$ mv backups oldbackups
+
+# Copy files from prod:
+:/home/redminebackup$ rsync -ahlu redminebackup@BACKUPSERVER:/home/redminebackup/backups/ backups/
+
+# We will restore on test server TESTSERVER so, we will rename the backups of prod server PRODSERVER to TESTSERVER to be used during restore.
+:/home/redminebackup$ cd backups/
+:/home/redminebackup/backups$ rm -rf TESTSERVERold
+:/home/redminebackup/backups$ mv TESTSERVER TESTSERVERold
+:/home/redminebackup/backups$ mv PRODSERVER TESTSERVER
+:$ exit
+
+# Restore:
+:$ sudo su redmine
+:/home/redminebackup/backups$ redmine_back --restore --dropdb
+
+# Plugins:
+$ cd /opt/redmine/current/plugins
+:/opt/redmine/current/plugins$ source /usr/local/rvm/scripts/rvm && bundle install
+:/opt/redmine/current/plugins$ source /usr/local/rvm/scripts/rvm && rake db:migrate RAILS_ENV=production
+
+:/opt/redmine/current/plugins$ source /usr/local/rvm/scripts/rvm && rake redmine:plugins:migrate RAILS_ENV=production
+
+
+# Restart apache:
+
+- Login to TESTSERVER
+- Disable notifications
+	- Change hostname and path   - TESTSERVER.YOURDOMAIN.NET
+Change application title
