@@ -38,7 +38,7 @@
   user:
     name: "{{ redmine_backup_user }}"
     comment: "redmine_backup_userr"
-    groups: "{{ redmine_system_user}},www-data"
+    groups: "www-data"
     shell: /bin/bash
     password: "{{ redmine_backup_password }}"
     generate_ssh_key: yes
@@ -48,7 +48,7 @@
 - name: create redmine_backup_user on remote backup_server
   user:
     name: "{{ redmine_backup_user }}"
-    comment: "redmine_backup_userr"
+    comment: "redmine_backup_user"
     groups: www-data
     shell: /bin/bash
     password: "{{ redmine_backup_password }}"
@@ -56,6 +56,7 @@
     state: present
     append: yes
   when: ansible_hostname != redmine_backup_server
+  become: yes
   delegate_to: "{{ redmine_backup_server }}"
 
 # Add this step before as password was changed during install
@@ -64,7 +65,7 @@
     src: dot_my.cnf.j2
     dest: "/home/{{ redmine_backup_user }}/.my.cnf"
     owner: "{{ redmine_backup_user }}"
-    group: "{{ redmine_backup_user }}"
+    group: "root"
     mode: 0650
 
 - name: add .my.cnf file to redmine user's home
@@ -72,7 +73,7 @@
     src: dot_my.cnf.j2
     dest: "/home/{{ redmine_system_user }}/.my.cnf"
     owner: "redmine"
-    group: "redmine"
+    group: "root"
     mode: 0650
 
 - name: allow redmine user to restart service apache2 after restore
